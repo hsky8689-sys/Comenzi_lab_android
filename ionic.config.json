@@ -1,0 +1,7 @@
+{
+  "name": "comenzi",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}

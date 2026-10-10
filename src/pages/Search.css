@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@100;200;300;400;500;600;700;800;900&display=swap');
+*{
+    font-family: 'Archivo', sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    font-style:normal;
+    letter-spacing: 0.00em;
+    line-height: 1.4;
+    word-spacing: 2px;
+    text-transform: none;
+    text-decoration: none;
+    text-align: left;
+    --color:#333;
+}
+.searchPage{
+    background-color: wheat;
+    display: grid;
+}
+@keyframes search-bar-focus {
+    from{
+        font-size: 20px;
+        font-weight: 400;
+        font-style:normal;
+    }
+    to{
+        font-size: 30px;
+        font-weight: 500;
+        font-style:normal;
+    }
+}
+.searchPage #searchBar{
+    --border-radius: 10px;
+    --box-shadow: inherit;
+    border: 5px orange solid;
+    font-size: clamp(1.8rem,2.5vw,2.8rem);
+    height: inherit;
+    padding: 0;
+    --ion-font-family: inherit;
+    animation-name:search-bar-focus;
+    animation-duration: 2s;
+}
+.searchPage #mainToolbar{
+    position: sticky;
+    top:10vh;
+    border-radius: initial;
+    padding: 1vh;
+    height: clamp(3rem,17vh,30vh);
+    margin:0 auto;
+}
+.searchPage ion-card{
+    --background:#fff8f0;
+    justify-content: center;
+}
+.searchPage ion-content{
+    height: 100%;
+}
+.searchPage #placeholder{
+    width: 100%;
+    height: 100%;
+}
+.searchPage ion-button{
+    --background: wheat;
+    --color:orange;
+    --border-radius: 10px;
+    --border-style:solid;
+    --box-shadow: 0 2px 6px 0 rgb(0,0,0,0.25);
+}
