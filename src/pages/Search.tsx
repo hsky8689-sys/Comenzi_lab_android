@@ -18,7 +18,7 @@ import {
 import {searchCircle, trashSharp} from "ionicons/icons";
 import log from "../logger";
 import './Search.css';
-import {RefObject, useEffect, useRef, useState} from "react";
+import {useEffect, useState} from "react";
 import {restaurantService} from "../Service";
 import {Product, Restaurant} from "../Types";
 import {Client} from "@stomp/stompjs";
