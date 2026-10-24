@@ -70,7 +70,7 @@ const Search: React.FC = () => {
         }
     }
     const addToOrder = (p: Product) => {
-        const orderItem = {id:p.id,name:p.name,price:p.price,restaurant:p.restaurant,quantity:1} as OrderedItem
+        const orderItem = {...p,quantity:1} as OrderedItem
         //alert(JSON.stringify(orderItem, null, 2))
         localOrdersService.addItem(orderItem);
     }

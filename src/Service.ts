@@ -9,7 +9,6 @@ const api = axios.create({
    baseURL:"http://localhost:8080",
    headers:{"Content-Type":"application/json"}
 });
-const emit = () => listeners.forEach(l => l());
 api.interceptors.request.use(config => {
     const token = localStorage.getItem("jwt");
     if (token) {
@@ -24,14 +23,11 @@ export const localStorageService ={
         isLogged =  typeof obtained === 'string' && obtained.length>0
         return isLogged;
     },
-    queueOperation():void{
-
+    cacheResult(key:string,value:never):void{
+        localStorage.setItem(key,value);
     },
-    cacheResult(key:string,value):void{
-        console.log(key,value);
-    },
-    getCachedOrDefault(key:string):string{
-        return localStorage.getItem(key) || "";
+    getCached(key:string):string|null{
+        return localStorage.getItem(key);
     },
     logout():boolean{
         if(this.isUserLogged()){
@@ -77,8 +73,13 @@ export const authService = {
 }
 export const orderService = {
     async placeOrder(body:Omit<Order,"id">) : Promise<Order> {
-         const res = await api.post("/orders",body);
-         return res.data;
+        if(network.isOnline()) {
+            const res = await api.post("/orders", body);
+            return res.data;
+        }else{
+            //place in queue
+            return null;
+        }
     }
 }
 export const restaurantService = {
@@ -91,7 +92,7 @@ export const restaurantService = {
                 return res.data.data;
             }
             else{
-                const cachedMaybe = localStorageService.getCachedOrDefault(`restaurant:${id}`);
+                const cachedMaybe = localStorageService.getCached(`restaurant:${id}`) || "";
                 if(cachedMaybe.length>0) {
                     return JSON.parse(cachedMaybe);
                 }
@@ -99,7 +100,7 @@ export const restaurantService = {
             }
         } catch (err) {
             log.error("searchById a crapat:", err);
-            const cachedMaybe = localStorageService.getCachedOrDefault(`restaurant:${id}`);
+            const cachedMaybe = localStorageService.getCached(`restaurant:${id}`) || "";
             if(cachedMaybe.length>0) {
                 return JSON.parse(cachedMaybe);
             }
@@ -117,7 +118,11 @@ export const restaurantService = {
         }
     }
 }
-let orderItems:Record<number,OrderedItem> = {};
+const emit = () => {
+    listeners.forEach(l => l())
+    localStorageService.cacheResult("cart",JSON.stringify(orderItems));
+};
+let orderItems = JSON.parse(localStorageService.getCached("cart") || "{}")
 export const localOrdersService = {
     deleteItem(id:number):void{
         if(orderItems[id]!==undefined) {
@@ -125,7 +130,6 @@ export const localOrdersService = {
              orderItems = rest
              emit()
         }
-        //alert(JSON.stringify(orderItems, null, 2))
     },
     dropItem(id:number):void{
         const found = orderItems[id]

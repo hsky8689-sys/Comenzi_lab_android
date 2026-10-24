@@ -14,7 +14,6 @@ export interface Product extends Entity<number>{
     restaurant:number;
 }
 export interface Order extends Entity<number>{
-    userId:number;
     orderTime:string;
     products:Product[];
 }

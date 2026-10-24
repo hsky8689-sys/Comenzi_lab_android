@@ -2,7 +2,6 @@ import {useSyncExternalStore} from "react";
 
 let online = navigator.onLine;
 const listeners = new Set<()=>void>();
-
 const update = (value:boolean)=>{
   online = value;
   listeners.forEach(l=>l());
