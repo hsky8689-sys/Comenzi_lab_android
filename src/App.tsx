@@ -1,7 +1,7 @@
 import {Navigate, Route} from 'react-router-dom';
-import {IonApp, IonRouterOutlet, setupIonicReact} from '@ionic/react';
+import {IonApp, IonCard, IonChip, IonIcon, IonLabel, IonRouterOutlet, setupIonicReact} from '@ionic/react';
 import {IonReactRouter} from '@ionic/react-router';
-import Home from './pages/Home';
+import './App.css'
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -33,6 +33,9 @@ import '@ionic/react/css/display.css';
 import Search from "./pages/Search";
 import OrderItems, {OrderedItem} from "./components/OrderItems";
 import {useState} from "react";
+import {useNetworkStatus} from "./Network";
+import {ellipse} from "ionicons/icons";
+import LoginPage from "./pages/Login";
 
 setupIonicReact();
 export interface OrderProps {
@@ -40,15 +43,24 @@ export interface OrderProps {
     setOrder: React.Dispatch<React.SetStateAction<OrderedItem[]>>;
 }
 const App: React.FC = () => {
-    const [order,setOrder] = useState<OrderedItem[]>([]);
+    const isOnline =useNetworkStatus();
     return <IonApp>
         <IonReactRouter>
             <IonRouterOutlet>
-                <Route path="/search" element={<Search order={order} setOrder={setOrder}/>}/>
-                <Route path="/order" element={<OrderItems order={order} setOrder={setOrder}/>}/>
-                <Route path="/home" element={<Home/>}/>
-                <Route path="/" element={<Navigate to="/home" replace/>}/>
+                <Route path="/search" element={<Search/>}/>
+                <Route path="/order" element={<OrderItems/>}/>
+                <Route path="/login" element={<LoginPage/>}/>
+                <Route path="/" element={<Navigate to="/login" replace/>}/>
             </IonRouterOutlet>
+            <IonCard className={'card-colt'}>
+                <div className={'content'}>
+                    You are currently {
+                    <IonChip color={isOnline ? 'success' : 'danger'}>
+                        <IonIcon icon={ellipse} />
+                        <IonLabel>{isOnline ? 'Online' : 'Offline'}</IonLabel>
+                    </IonChip>}
+                </div>
+            </IonCard>
         </IonReactRouter>
     </IonApp>
 };

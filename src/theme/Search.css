@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@100;200;300;400;500;600;700;800;900&display=swap');
-*{
+.searchPage{
     font-family: 'Archivo', sans-serif;
     font-size: 20px;
     font-weight: 400;
@@ -11,10 +11,7 @@
     text-decoration: none;
     text-align: left;
     --color:#333;
-}
-.searchPage{
     background-color: wheat;
-    display: grid;
 }
 @keyframes search-bar-focus {
     from{

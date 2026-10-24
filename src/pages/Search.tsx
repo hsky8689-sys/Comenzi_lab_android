@@ -17,14 +17,14 @@ import {
 } from "@ionic/react";
 import {searchCircle, trashSharp} from "ionicons/icons";
 import log from "../logger";
-import './Search.css';
-import {useEffect, useState} from "react";
-import {restaurantService} from "../Service";
+import '../theme/Search.css';
+import {useState} from "react";
+import {localOrdersService, restaurantService} from "../Service";
 import {Product, Restaurant} from "../Types";
-import {Client} from "@stomp/stompjs";
-import {OrderProps} from "../App";
+import {useNavigate} from 'react-router';
+import {OrderedItem} from "../components/OrderItems";
 
-const Search: React.FC<OrderProps> = ({order,setOrder}) => {
+const Search: React.FC = () => {
     const defaultLook: Restaurant = {
         id: 0,
         name: "Search for any restaurants",
@@ -33,6 +33,8 @@ const Search: React.FC<OrderProps> = ({order,setOrder}) => {
     };
     const [results, setResults] = useState<Restaurant>(defaultLook);
     const [products, setProducts] = useState<Product[]>([]);
+    const navigate = useNavigate();
+    /*
     useEffect(() => {
         const client = new Client({brokerURL: "ws://localhost:8080/mywebsockets/websocket"});
         client.onConnect = () => {
@@ -55,21 +57,22 @@ const Search: React.FC<OrderProps> = ({order,setOrder}) => {
         client.activate();
         return () => client.deactivate();
     }, [order, setOrder]);
+    */
     const handleInput = async (event: Event) => {
         let query = 0;
         const target = event.target as HTMLIonSearchbarElement;
-        if (target) query = parseInt(target.value!.toLowerCase());
+        if (target) query = parseInt(target.value!.trim().toLowerCase());
         const found = await restaurantService.searchById(query);
         log.debug(found);
-        if (found.id !== 0) {
+        if (found.id > 0) {
             setResults(found);
             setProducts(found.products);
         }
     }
     const addToOrder = (p: Product) => {
-        const found = order.find(pr=>pr.id===p.id)?.quantity
-        const quantity = found !== undefined ? found : 0;
-        setOrder([...order, {...p,quantity:quantity+1}]);
+        const orderItem = {id:p.id,name:p.name,price:p.price,restaurant:p.restaurant,quantity:1} as OrderedItem
+        //alert(JSON.stringify(orderItem, null, 2))
+        localOrdersService.addItem(orderItem);
     }
     return (
         <IonPage className={"searchPage"}>
@@ -107,7 +110,7 @@ const Search: React.FC<OrderProps> = ({order,setOrder}) => {
                         </IonList>
                     }
                     <IonButton onClick={() => {
-
+                        navigate('/order');
                     }
                     }>View my order</IonButton>
                 </IonCard>

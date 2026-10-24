@@ -1,0 +1,19 @@
+.card-colt {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1000;
+    margin: 0;
+    width: fit-content;
+    --background: cornsilk;
+    --color: #333;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+.card-colt .content {
+    display: flex;
+    align-items: center;
+    gap:8px;
+    padding: 8px 12px;
+    font-size: 14px;
+}
