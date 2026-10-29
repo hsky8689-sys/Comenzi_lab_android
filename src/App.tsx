@@ -1,5 +1,5 @@
 import {Navigate, Route} from 'react-router-dom';
-import {IonApp, IonCard, IonChip, IonIcon, IonLabel, IonRouterOutlet, setupIonicReact} from '@ionic/react';
+import {IonApp, IonButton, IonCard, IonChip, IonIcon, IonLabel, IonRouterOutlet, setupIonicReact} from '@ionic/react';
 import {IonReactRouter} from '@ionic/react-router';
 import './App.css'
 
@@ -34,14 +34,28 @@ import Search from "./pages/Search";
 import OrderItems, {OrderedItem} from "./components/OrderItems";
 import {useState} from "react";
 import {useNetworkStatus} from "./Network";
-import {ellipse} from "ionicons/icons";
+import {ellipse, logOutOutline} from "ionicons/icons";
 import LoginPage from "./pages/Login";
+import {useNavigate} from "react-router";
+import {authService} from "./Service";
 
 setupIonicReact();
 export interface OrderProps {
     order: OrderedItem[];
     setOrder: React.Dispatch<React.SetStateAction<OrderedItem[]>>;
 }
+// has to live inside IonReactRouter, useNavigate only works there
+const LogoutButton: React.FC = () => {
+    const navigate = useNavigate();
+    const logout = () => {
+        authService.logout();
+        navigate("/login", {replace: true});
+    };
+    return <IonButton size="small" color="medium" onClick={logout}>
+        <IonIcon slot="start" icon={logOutOutline}/>
+        Logout
+    </IonButton>
+};
 const App: React.FC = () => {
     const isOnline =useNetworkStatus();
     return <IonApp>
@@ -54,6 +68,7 @@ const App: React.FC = () => {
             </IonRouterOutlet>
             <IonCard className={'card-colt'}>
                 <div className={'content'}>
+                    <LogoutButton/>
                     You are currently {
                     <IonChip color={isOnline ? 'success' : 'danger'}>
                         <IonIcon icon={ellipse} />

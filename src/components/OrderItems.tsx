@@ -1,10 +1,11 @@
-import React, {useEffect, useMemo, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {
     IonButton,
     IonCard,
     IonContent,
     IonHeader,
     IonInfiniteScroll,
+    IonInfiniteScrollContent,
     IonItem,
     IonLabel,
     IonList,
@@ -15,6 +16,10 @@ import {Order, Product} from "../Types";
 import {localOrdersService, orderService, useOrder} from "../Service";
 import {useNetworkStatus} from "../Network";
 import {newIdempotencyKey} from "../idempotency";
+import {usePendingOrders} from "../orderQueue";
+import {usePagedList} from "../usePagedList";
+
+const HISTORY_PAGE_SIZE = 10;
 
 export const nowLocal = (): string => {
     const now = new Date();
@@ -34,41 +39,50 @@ const OrderItems:React.FC = () =>{
     }
     const price = useMemo(computePrice,[order])
     const [present] = useIonToast();
+    const pendingOrders = usePendingOrders();
     const [enable,setEnabled]=useState(true);
-    useEffect(() => {setEnabled(online)},[online])
     const tryPlaceOrder = async () => {
         if(price===0){
             present({
                 message: "Adăugați mai înainte produse la comandă",
                 duration: 2500,
-                position: "center",
+                position: "middle",
                 color: "warning",
             })
             return
         }
-        if(online) {
+        setEnabled(false)
+        try {
             const prod:Product[] = []
             Object.values(order).forEach(p=>prod.push(p));
-            await orderService.placeOrder({orderTime: nowLocal(), products: prod, idempotencyKey: newIdempotencyKey()})
-                .then(() => setEnabled(false))
-                .finally(() => {
-                    localOrdersService.clearOrders()
-                    setEnabled(true)
-                })
-        }else{
-            setEnabled(false);
+            // the key is generated once, here; a queued order keeps it for every retry
+            const result = await orderService.placeOrder({orderTime: nowLocal(), products: prod, idempotencyKey: newIdempotencyKey()})
+            if(result !== "rejected") localOrdersService.clearOrders()
+            if(result === "sent") void reload()
             present({
-                message: "Comanda e în așteptare, se trimite când revii online",
+                message: result === "sent" ? "Comanda a fost trimisă"
+                    : result === "queued" ? "Comanda nu a fost trimisă, se trimite automat când revii online"
+                    : "Comanda a fost respinsă de server",
                 duration: 3000,
                 position: "bottom",
-                color: "warning",
+                color: result === "sent" ? "success" : result === "queued" ? "warning" : "danger",
             });
+        } finally {
+            setEnabled(true)
         }
     }
     const placeOrderBtn = <IonButton disabled={!enable} onClick={()=>tryPlaceOrder()}>
             Place order
         </IonButton>
-    const [history,setHistory] = useState<Order[]>(()=>orderService.getUserHistory(0,10))
+    // the history is loaded from page 0 as soon as the page opens
+    const fetchHistoryPage = useCallback((page:number)=>orderService.getUserHistory(page, HISTORY_PAGE_SIZE),[])
+    const {items: history, last, loadMore, reload} = usePagedList<Order>(fetchHistoryPage, "history")
+    // an order from the offline queue reached the server -> show it in the history
+    const previousPending = useRef(pendingOrders.length)
+    useEffect(() => {
+        if(pendingOrders.length < previousPending.current) void reload()
+        previousPending.current = pendingOrders.length
+    }, [pendingOrders.length, reload])
     return <IonPage className={"orderList"}>
         <IonHeader>
             <IonLabel>My items</IonLabel>
@@ -87,18 +101,30 @@ const OrderItems:React.FC = () =>{
                     </IonItem>)
             }
             </IonList>
+            <IonLabel>Total price:{price}</IonLabel>
+            {placeOrderBtn}
+            {pendingOrders.length > 0 &&
+                <IonLabel color="warning">
+                    {pendingOrders.length} comenzi netrimise{online ? ", se trimit acum" : ", se trimit când revii online"}
+                </IonLabel>}
+            <IonButton onClick={()=>orderService.getOrderStats(22)}>command id test</IonButton>
             <IonCard>User history</IonCard>
-            <IonInfiniteScroll>
-                {Object.values(history).map(item=>
+            <IonList>
+                {history.length === 0 && <IonItem><IonLabel>Nicio comandă încă</IonLabel></IonItem>}
+                {history.map(item=>
                     <IonItem key={item.id}>
-                        <IonLabel>{item.orderTime}</IonLabel>
+                        <IonLabel>{item.orderTime.replace("T", " ").slice(0, 16)}</IonLabel>
+                        <IonLabel slot="end">{item.products.length} produse</IonLabel>
                     </IonItem>)
                 }
+            </IonList>
+            <IonInfiniteScroll disabled={last}
+                               onIonInfinite={async (event) => {
+                                   await loadMore();
+                                   await event.target.complete();
+                               }}>
+                <IonInfiniteScrollContent loadingText="Se încarcă comenzile mai vechi..."/>
             </IonInfiniteScroll>
-            {placeOrderBtn}
-            <IonLabel>Total price:{price}</IonLabel>
-            <IonButton onClick={()=>orderService.getUserHistory(0,10)}>history test</IonButton>
-            <IonButton onClick={()=>orderService.getOrderStats(22)}>command id test</IonButton>
         </IonContent>
     </IonPage>
     };
