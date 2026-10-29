@@ -1,20 +1,20 @@
-import React, {useCallback, useEffect, useMemo, useState} from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import {
     IonButton,
     IonCard,
     IonContent,
     IonHeader,
+    IonInfiniteScroll,
     IonItem,
     IonLabel,
     IonList,
     IonPage,
-    IonToast,
     useIonToast
 } from "@ionic/react";
-import {Product} from "../Types";
-import {localOrdersService, localStorageService, orderService, useOrder} from "../Service";
+import {Order, Product} from "../Types";
+import {localOrdersService, orderService, useOrder} from "../Service";
 import {useNetworkStatus} from "../Network";
-import {remove} from "ionicons/icons";
+import {newIdempotencyKey} from "../idempotency";
 
 export const nowLocal = (): string => {
     const now = new Date();
@@ -33,17 +33,9 @@ const OrderItems:React.FC = () =>{
         return sum;
     }
     const price = useMemo(computePrice,[order])
-    const handleAdd= (item:OrderedItem) => {
-        localOrdersService.addItem(item)
-    }
-    const handleDrop= (item:OrderedItem) => {
-        localOrdersService.dropItem(item.id)
-    }
     const [present] = useIonToast();
     const [enable,setEnabled]=useState(true);
-    useEffect(() => {setEnabled(online)},
-        [online]
-    )
+    useEffect(() => {setEnabled(online)},[online])
     const tryPlaceOrder = async () => {
         if(price===0){
             present({
@@ -57,7 +49,7 @@ const OrderItems:React.FC = () =>{
         if(online) {
             const prod:Product[] = []
             Object.values(order).forEach(p=>prod.push(p));
-            await orderService.placeOrder({orderTime: nowLocal(), products: prod})
+            await orderService.placeOrder({orderTime: nowLocal(), products: prod, idempotencyKey: newIdempotencyKey()})
                 .then(() => setEnabled(false))
                 .finally(() => {
                     localOrdersService.clearOrders()
@@ -73,11 +65,10 @@ const OrderItems:React.FC = () =>{
             });
         }
     }
-    const placeOrderBtn =
-        <IonButton disabled={!enable}
-                   onClick={()=>tryPlaceOrder()}>
+    const placeOrderBtn = <IonButton disabled={!enable} onClick={()=>tryPlaceOrder()}>
             Place order
         </IonButton>
+    const [history,setHistory] = useState<Order[]>(()=>orderService.getUserHistory(0,10))
     return <IonPage className={"orderList"}>
         <IonHeader>
             <IonLabel>My items</IonLabel>
@@ -90,14 +81,24 @@ const OrderItems:React.FC = () =>{
                         <IonLabel>{i.price} lei</IonLabel>
                         <IonLabel>{i.quantity}</IonLabel>
                         <IonCard>
-                            <IonButton onClick={()=>handleAdd(i)}>+</IonButton>
-                            <IonButton onClick={()=>handleDrop(i)}>-</IonButton>
+                            <IonButton onClick={()=>localOrdersService.addItem(i)}>+</IonButton>
+                            <IonButton onClick={()=>localOrdersService.dropItem(i.id)}>-</IonButton>
                         </IonCard>
                     </IonItem>)
             }
             </IonList>
+            <IonCard>User history</IonCard>
+            <IonInfiniteScroll>
+                {Object.values(history).map(item=>
+                    <IonItem key={item.id}>
+                        <IonLabel>{item.orderTime}</IonLabel>
+                    </IonItem>)
+                }
+            </IonInfiniteScroll>
             {placeOrderBtn}
             <IonLabel>Total price:{price}</IonLabel>
+            <IonButton onClick={()=>orderService.getUserHistory(0,10)}>history test</IonButton>
+            <IonButton onClick={()=>orderService.getOrderStats(22)}>command id test</IonButton>
         </IonContent>
     </IonPage>
     };

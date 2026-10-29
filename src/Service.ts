@@ -80,6 +80,32 @@ export const orderService = {
             //place in queue
             return null;
         }
+    },
+    async getUserHistory(page:number,size:number):Promise<Order[]>{
+        if(network.isOnline()){
+            const res = await api.get(`/orders/history?page=${page}&size=${size}&sort=orderTime,desc`)
+            localStorageService.cacheResult(`orders:${page}:${size}`,res.data.orders)
+            return res.data.orders;
+        }else{
+            const cachedMaybe = localStorageService.getCached(`orders:${page}:${size}`) || "";
+            if(cachedMaybe.length>0) {
+                return JSON.parse(cachedMaybe);
+            }
+            return []
+        }
+    },
+    async getOrderStats(id:number):Promise<Order[]>{
+        if(network.isOnline()){
+            const res = await api.get(`/orders/${id}`)
+            localStorageService.cacheResult(`orders:${id}`,JSON.stringify(res.data.order))
+            return res.data.orders;
+        }else{
+            const cachedMaybe = localStorageService.getCached(`orders:${page}:${size}`) || "";
+            if(cachedMaybe.length>0) {
+                return JSON.parse(cachedMaybe);
+            }
+            return []
+        }
     }
 }
 export const restaurantService = {

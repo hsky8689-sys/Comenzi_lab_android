@@ -16,6 +16,7 @@ export interface Product extends Entity<number>{
 export interface Order extends Entity<number>{
     orderTime:string;
     products:Product[];
+    idempotencyKey?:string;
 }
 export interface Restaurant extends Entity<number>{
     name:string;
