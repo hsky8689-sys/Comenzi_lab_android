@@ -74,10 +74,11 @@ const OrderItems:React.FC = () =>{
     const placeOrderBtn = <IonButton disabled={!enable} onClick={()=>tryPlaceOrder()}>
             Place order
         </IonButton>
-    // the history is loaded from page 0 as soon as the page opens
-    const fetchHistoryPage = useCallback((page:number)=>orderService.getUserHistory(page, HISTORY_PAGE_SIZE),[])
+    //apelam functia de istoric per utilizator imediat ce intra in pagina si salvam rezulatul intr-un callback
+    const fetchHistoryPage = useCallback((page:number) =>orderService.getUserHistory(page, HISTORY_PAGE_SIZE),
+        [])
     const {items: history, last, loadMore, reload} = usePagedList<Order>(fetchHistoryPage, "history")
-    // an order from the offline queue reached the server -> show it in the history
+    // daca ajunge la server o comanda din coada,o afisam in istoric si schimbam ultima lungime cunoscuta a listei de comenzi
     const previousPending = useRef(pendingOrders.length)
     useEffect(() => {
         if(pendingOrders.length < previousPending.current) void reload()

@@ -7,7 +7,7 @@ export function usePagedList<T>(fetchPage: (page: number) => Promise<PageResult<
     const [items, setItems] = useState<T[]>([]);
     const [page, setPage] = useState(0);
     const [last, setLast] = useState(false);
-    // only the newest request may write the state (typing fast fires several searches)
+    // nu se rescrie state decat la ultima cerere (se tot face cate o cautare in server cand scrii ceva in search bar)
     const latestRequest = useRef(0);
 
     const load = useCallback(async (pageToLoad: number, replace: boolean) => {

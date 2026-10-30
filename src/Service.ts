@@ -18,7 +18,6 @@ api.interceptors.request.use(config => {
     return config;
 });
 let isLogged:boolean = false
-// components using useLoginState re-render when the token is stored or removed
 const authListeners = new Set<() => void>();
 const notifyAuthChange = () => authListeners.forEach(l => l());
 export const localStorageService ={

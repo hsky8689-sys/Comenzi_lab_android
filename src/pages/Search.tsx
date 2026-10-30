@@ -35,13 +35,16 @@ const Search: React.FC = () => {
     const navigate = useNavigate();
     const fetchPage = useCallback((page: number): Promise<PageResult<Restaurant>> => {
         const value = query.trim();
-        // an id search needs a number; anything else would only get a 400 from the backend
+        // daca facem cautare dupa id ne trebuie UN NUMAR SI ATAT,in rest nu va gasi nimic pe backend
         if (searchBy === "id" && !/^\d+$/.test(value)) {
             return Promise.resolve({items: [], page, last: true});
         }
         return restaurantService.search(searchBy, value, page, PAGE_SIZE);
     }, [searchBy, query]);
     const {items: restaurants, last, loadMore} = usePagedList(fetchPage, `${searchBy}:${query}`);
+    const goToOrder = () => {
+        navigate("/order",{replace: true});
+    }
     /*
     useEffect(() => {
         const client = new Client({brokerURL: "ws://localhost:8080/mywebsockets/websocket"});
@@ -99,7 +102,7 @@ const Search: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent>
-                <IonButton onClick={() => navigate('/order')}>View my order</IonButton>
+                <IonButton onClick={goToOrder}>View my order</IonButton>
                 {restaurants.length === 0 &&
                     <IonCard>
                         <IonCardHeader>

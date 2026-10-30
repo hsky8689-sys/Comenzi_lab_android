@@ -32,7 +32,6 @@ import '@ionic/react/css/display.css';
 //import './theme/variables.css';
 import Search from "./pages/Search";
 import OrderItems, {OrderedItem} from "./components/OrderItems";
-import {useState} from "react";
 import {useNetworkStatus} from "./Network";
 import {ellipse, logOutOutline} from "ionicons/icons";
 import LoginPage from "./pages/Login";
@@ -44,7 +43,6 @@ export interface OrderProps {
     order: OrderedItem[];
     setOrder: React.Dispatch<React.SetStateAction<OrderedItem[]>>;
 }
-// has to live inside IonReactRouter, useNavigate only works there
 const LogoutButton: React.FC = () => {
     const navigate = useNavigate();
     const logout = () => {
