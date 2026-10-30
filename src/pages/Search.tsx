@@ -43,7 +43,7 @@ const Search: React.FC = () => {
     }, [searchBy, query]);
     const {items: restaurants, last, loadMore} = usePagedList(fetchPage, `${searchBy}:${query}`);
     const goToOrder = () => {
-        navigate("/order",{replace: true});
+        navigate("/order");
     }
     /*
     useEffect(() => {

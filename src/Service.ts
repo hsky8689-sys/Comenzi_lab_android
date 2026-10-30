@@ -91,7 +91,6 @@ const sendOrder = async (order: PendingOrder): Promise<SendResult> => {
         return "sent";
     } catch (err) {
         const status = axios.isAxiosError(err) ? err.response?.status : undefined;
-        // no response = offline/server down; 5xx = server problem; 401/403 = token expired
         if (status === undefined || status >= 500 || status === 401 || status === 403) return "retry";
         return "rejected";
     }

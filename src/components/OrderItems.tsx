@@ -108,7 +108,6 @@ const OrderItems:React.FC = () =>{
                 <IonLabel color="warning">
                     {pendingOrders.length} comenzi netrimise{online ? ", se trimit acum" : ", se trimit când revii online"}
                 </IonLabel>}
-            <IonButton onClick={()=>orderService.getOrderStats(22)}>command id test</IonButton>
             <IonCard>User history</IonCard>
             <IonList>
                 {history.length === 0 && <IonItem><IonLabel>Nicio comandă încă</IonLabel></IonItem>}
