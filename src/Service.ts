@@ -1,13 +1,14 @@
 import axios from "axios";
-import {ApiResponse, Order, PageResult, Restaurant, RestaurantSearchField, User} from "./Types";
+import {ApiResponse, Order, PageResult, Product, Restaurant, RestaurantSearchField, User} from "./Types";
 import log from "./logger";
 import {network} from "./Network";
 import {useSyncExternalStore} from "react";
 import {OrderedItem} from "./components/OrderItems";
-import {orderQueue, PendingOrder, SendResult} from "./orderQueue";
+import {orderQueue, PendingOrder, PendingRestaurantAddOperation, SendResult} from "./orderQueue";
+import {restaurantCrudQueue} from "./restaurantQueue";
 
 const api = axios.create({
-   baseURL:"http://localhost:8080",
+   baseURL:"",
    headers:{"Content-Type":"application/json"}
 });
 api.interceptors.request.use(config => {
@@ -157,7 +158,7 @@ export const restaurantService = {
                 if(cachedMaybe.length>0) {
                     return JSON.parse(cachedMaybe);
                 }
-                return {name:" ",adress:" ",products:[],id:-1};
+                return {name:" ",adress:" ",products:[],id:-1,ownerId:-1};
             }
         } catch (err) {
             log.error("searchById a crapat:", err);
@@ -165,7 +166,7 @@ export const restaurantService = {
             if(cachedMaybe.length>0) {
                 return JSON.parse(cachedMaybe);
             }
-            return {name:" ",adress:" ",products:[],id:-1};
+            return {name:" ",adress:" ",products:[],id:-1,ownerId:-1};
         }
     },
     async search(by:RestaurantSearchField, value:string, page:number, size:number):Promise<PageResult<Restaurant>>{
@@ -174,7 +175,45 @@ export const restaurantService = {
             const res = await api.get(`/restaurants/search?${params}`);
             return {items: res.data.restaurants, page: res.data.page, last: res.data.last};
         });
+    },
+    async getUserRestaurants(page:number,size:number):Promise<PageResult<Restaurant>>{
+        const params = new URLSearchParams({page: String(page), size: String(size)});
+        return cachedPage(`restaurants`,page,async () => {
+            const res = await api.get(`/restaurants/user-collection?${params}`);
+            return {items: res.data.restaurants, page: res.data.page, last: res.data.last};
+        });
+    },
+    async addNewRestaurant(restaurant:Omit<Restaurant,"id">):Promise<boolean>{
+        const body = {res:restaurant}
+        if (network.isOnline()) {
+            try {
+                const result = await api.post('/restaurants', body);
+                return result.status === 200;
+            }catch (e){
+                return false;
+            }
+        }
+        else{
+            restaurantCrudQueue.enqueue(body as unknown as PendingRestaurantAddOperation)
+            return false;
+        }
     }
+}
+export const productsService = {
+    async addProduct(product:Omit<Product,"id">):Promise<boolean>{
+        if (network.isOnline()) {
+            try {
+                const result = await api.post('/products',product);
+                return result.status === 200;
+            }catch (e){
+                return false;
+            }
+        }
+        else{
+            //restaurantCrudQueue.enqueue(body as unknown as PendingRestaurantAddOperation)
+            return false;
+        }
+    },
 }
 const emit = () => {
     listeners.forEach(l => l())

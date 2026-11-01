@@ -1,9 +1,12 @@
 import {useSyncExternalStore} from "react";
-import {Order} from "./Types";
+import {Order, Restaurant} from "./Types";
 import {network} from "./Network";
 import log from "./logger";
 
 export type PendingOrder = Omit<Order, "id"> & { idempotencyKey: string };
+export type PendingRestaurantAddOperation = Omit<Restaurant,"id">;
+export type PendingRestaurantDeleteOperation = Restaurant;
+export type PendingRestaurantOperation = PendingRestaurantDeleteOperation | PendingRestaurantAddOperation;
 export type SendResult = "sent" | "retry" | "rejected";
 
 const STORAGE_KEY = "pendingOrders";
@@ -58,7 +61,6 @@ export const orderQueue = {
         return () => listeners.delete(listener);
     },
 };
-
 network.subscribe(() => {
     if (network.isOnline()) void orderQueue.flush();
 });

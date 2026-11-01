@@ -33,10 +33,11 @@ const LoginPage:React.FC = () => {
         setErrorMessage("");
     };
     const handleLogin = async () => {
-        await authService.login(username,password);
+        const found = await authService.login(username,password);
         if(!localStorageService.isUserLogged()){
             setErrorMessage("Bad credentials");
         }
+        else localStorageService.cacheResult("id",JSON.stringify(found.id));
     };
     const handleSignup = async () => {
         if(username.trim()==="" || password==="" || email.trim()===""){
@@ -47,8 +48,11 @@ const LoginPage:React.FC = () => {
         if(error){
             setErrorMessage(error);
             return;
+        }else {
+            setLoginMode(true);
+            setUsername("");
+            setPassword("");
         }
-        await handleLogin();
     };
     const submit = async () => {
         setBusy(true);

@@ -36,7 +36,10 @@ import {useNetworkStatus} from "./Network";
 import {ellipse, logOutOutline} from "ionicons/icons";
 import LoginPage from "./pages/Login";
 import {useNavigate} from "react-router";
-import {authService} from "./Service";
+import {authService, localStorageService, useLoginState} from "./Service";
+import UserRestaurants from "./pages/UserRestaurants";
+import Navbar from "./components/Navbar";
+import {useState} from "react";
 
 setupIonicReact();
 export interface OrderProps {
@@ -47,6 +50,7 @@ const LogoutButton: React.FC = () => {
     const navigate = useNavigate();
     const logout = () => {
         authService.logout();
+        localStorage.clear();
         navigate("/login", {replace: true});
     };
     return <IonButton size="small" color="medium" onClick={logout}>
@@ -60,10 +64,12 @@ const App: React.FC = () => {
         <IonReactRouter>
             <IonRouterOutlet>
                 <Route path="/search" element={<Search/>}/>
-                <Route path="/order" element={<OrderItems/>}/>
+                <Route path="/orders" element={<OrderItems/>}/>
                 <Route path="/login" element={<LoginPage/>}/>
+                <Route path="/restaurants" element={<UserRestaurants/>}/>
                 <Route path="/" element={<Navigate to="/login" replace/>}/>
             </IonRouterOutlet>
+            <Navbar/>
             <IonCard className={'card-colt'}>
                 <div className={'content'}>
                     <LogoutButton/>

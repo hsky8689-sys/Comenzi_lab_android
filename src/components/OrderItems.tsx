@@ -43,7 +43,7 @@ const OrderItems:React.FC = () =>{
     const [enable,setEnabled]=useState(true);
     const tryPlaceOrder = async () => {
         if(price===0){
-            present({
+            await present({
                 message: "Adăugați mai înainte produse la comandă",
                 duration: 2500,
                 position: "middle",

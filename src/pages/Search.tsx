@@ -25,14 +25,13 @@ import {useCallback, useState} from "react";
 import {localOrdersService, restaurantService} from "../Service";
 import {PageResult, Product, Restaurant, RestaurantSearchField} from "../Types";
 import {usePagedList} from "../usePagedList";
-import {useNavigate} from 'react-router';
 import {OrderedItem} from "../components/OrderItems";
 
 const PAGE_SIZE = 5;
+const proto = location.protocol === "https:" ? "wss" : "ws";
 const Search: React.FC = () => {
     const [searchBy, setSearchBy] = useState<RestaurantSearchField>("name");
     const [query, setQuery] = useState("");
-    const navigate = useNavigate();
     const fetchPage = useCallback((page: number): Promise<PageResult<Restaurant>> => {
         const value = query.trim();
         // daca facem cautare dupa id ne trebuie UN NUMAR SI ATAT,in rest nu va gasi nimic pe backend
@@ -42,9 +41,6 @@ const Search: React.FC = () => {
         return restaurantService.search(searchBy, value, page, PAGE_SIZE);
     }, [searchBy, query]);
     const {items: restaurants, last, loadMore} = usePagedList(fetchPage, `${searchBy}:${query}`);
-    const goToOrder = () => {
-        navigate("/order");
-    }
     /*
     useEffect(() => {
         const client = new Client({brokerURL: "ws://localhost:8080/mywebsockets/websocket"});
@@ -102,7 +98,6 @@ const Search: React.FC = () => {
                 </IonToolbar>
             </IonHeader>
             <IonContent>
-                <IonButton onClick={goToOrder}>View my order</IonButton>
                 {restaurants.length === 0 &&
                     <IonCard>
                         <IonCardHeader>

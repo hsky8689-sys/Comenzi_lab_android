@@ -30,4 +30,5 @@ export interface Restaurant extends Entity<number>{
     name:string;
     adress:string;
     products:Product[];
+    ownerId:number;
 }
