@@ -29,18 +29,35 @@ import {OrderedItem} from "../components/OrderItems";
 
 const PAGE_SIZE = 5;
 const proto = location.protocol === "https:" ? "wss" : "ws";
+interface RestaurantData  {
+    items: Restaurant[];
+    last: boolean;
+    loadMore : (()=>Promise<void>);
+    reload:(()=>Promise<void>);
+}
 const Search: React.FC = () => {
     const [searchBy, setSearchBy] = useState<RestaurantSearchField>("name");
     const [query, setQuery] = useState("");
+    const [searching,setSearching] = useState(false);
     const fetchPage = useCallback((page: number): Promise<PageResult<Restaurant>> => {
+        if(!searching)return Promise.resolve({items: [], page, last: true});
         const value = query.trim();
         // daca facem cautare dupa id ne trebuie UN NUMAR SI ATAT,in rest nu va gasi nimic pe backend
         if (searchBy === "id" && !/^\d+$/.test(value)) {
             return Promise.resolve({items: [], page, last: true});
         }
         return restaurantService.search(searchBy, value, page, PAGE_SIZE);
-    }, [searchBy, query]);
-    const {items: restaurants, last, loadMore} = usePagedList(fetchPage, `${searchBy}:${query}`);
+    }, [searching]);
+    //const [data] = useCallback(()=>{
+    // if(searching)
+
+
+    // },[searching])
+    const executeSearch = usePagedList(fetchPage, `${searchBy}:${query}`);
+    const fetchedData = useCallback(()=>{
+        return executeSearch();
+    },[searching])
+    //const {items: restaurants, last, loadMore} = usePagedList(fetchPage, `${searchBy}:${query}`);
     /*
     useEffect(() => {
         const client = new Client({brokerURL: "ws://localhost:8080/mywebsockets/websocket"});
@@ -95,16 +112,24 @@ const Search: React.FC = () => {
                                   onIonInput={(event) => setQuery(event.detail.value ?? "")}
                     >
                     </IonSearchbar>
+                    <IonButton slot={"end"}
+                               style={{height:"100%"}}
+                               onClick={async (e)=>{
+                                    setSearching(true)
+                               }
+                    }>
+                        Search
+                    </IonButton>
                 </IonToolbar>
             </IonHeader>
             <IonContent>
-                {restaurants.length === 0 &&
+                {fetchedData.items.length === 0 &&
                     <IonCard>
                         <IonCardHeader>
                             <IonCardSubtitle>Niciun restaurant găsit</IonCardSubtitle>
                         </IonCardHeader>
                     </IonCard>}
-                {restaurants.map(r => (
+                {fetchedData.items.map(r => (
                     <IonCard key={r.id}>
                         <IonCardHeader>
                             <IonCardTitle>{r.name}</IonCardTitle>
@@ -113,6 +138,7 @@ const Search: React.FC = () => {
                         <IonList>
                             {r.products.map(p => (
                                 <IonItem key={p.id}>
+                                    <img alt={""} src={""} style={{width:"100%",height:"100%",borderRadius:"10px"}}/>
                                     <IonLabel>{p.name}</IonLabel>
                                     <IonNote slot="end">{p.price} lei</IonNote>
                                     <IonButton slot="end" fill="outline" color="warning"
@@ -122,9 +148,9 @@ const Search: React.FC = () => {
                         </IonList>
                     </IonCard>
                 ))}
-                <IonInfiniteScroll disabled={last}
+                <IonInfiniteScroll disabled={fetchedData.last}
                                    onIonInfinite={async (event) => {
-                                       await loadMore();
+                                       await fetchedData.loadMore();
                                        await event.target.complete();
                                    }}>
                     <IonInfiniteScrollContent loadingText="Se încarcă mai multe restaurante..."/>

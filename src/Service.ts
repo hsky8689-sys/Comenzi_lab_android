@@ -213,7 +213,7 @@ export const productsService = {
             //restaurantCrudQueue.enqueue(body as unknown as PendingRestaurantAddOperation)
             return false;
         }
-    },
+    }
 }
 const emit = () => {
     listeners.forEach(l => l())

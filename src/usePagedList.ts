@@ -3,7 +3,7 @@ import {PageResult} from "./Types";
 
 // Keeps the pages loaded so far for an infinite scroll.
 // When `resetKey` changes (new search text / filter) it starts again from page 0.
-export function usePagedList<T>(fetchPage: (page: number) => Promise<PageResult<T>>, resetKey: string) {
+export function usePagedList<T>(fetchPage: (page: number) => Promise<PageResult<T>>, resetKey: string)  {
     const [items, setItems] = useState<T[]>([]);
     const [page, setPage] = useState(0);
     const [last, setLast] = useState(false);
@@ -30,5 +30,5 @@ export function usePagedList<T>(fetchPage: (page: number) => Promise<PageResult<
 
     const reload = useCallback(() => load(0, true), [load]);
 
-    return {items, last, loadMore, reload};
+    return {items, last,page, loadMore, reload};
 }

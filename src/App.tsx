@@ -36,10 +36,9 @@ import {useNetworkStatus} from "./Network";
 import {ellipse, logOutOutline} from "ionicons/icons";
 import LoginPage from "./pages/Login";
 import {useNavigate} from "react-router";
-import {authService, localStorageService, useLoginState} from "./Service";
+import {authService} from "./Service";
 import UserRestaurants from "./pages/UserRestaurants";
 import Navbar from "./components/Navbar";
-import {useState} from "react";
 
 setupIonicReact();
 export interface OrderProps {

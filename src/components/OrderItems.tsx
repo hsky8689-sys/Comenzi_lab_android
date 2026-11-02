@@ -8,12 +8,14 @@ import {
     IonInfiniteScrollContent,
     IonItem,
     IonLabel,
-    IonList,
+    IonList, IonModal,
+    IonNote,
     IonPage,
+    IonSelectOption, IonToast,
     useIonToast
 } from "@ionic/react";
-import {Order, Product} from "../Types";
-import {localOrdersService, orderService, useOrder} from "../Service";
+import {Order, Product, Restaurant} from "../Types";
+import {localOrdersService, localStorageService, orderService, useOrder} from "../Service";
 import {useNetworkStatus} from "../Network";
 import {newIdempotencyKey} from "../idempotency";
 import {usePendingOrders} from "../orderQueue";
@@ -41,6 +43,8 @@ const OrderItems:React.FC = () =>{
     const [present] = useIonToast();
     const pendingOrders = usePendingOrders();
     const [enable,setEnabled]=useState(true);
+    const [open, setOpen] = useState(false);
+    const [selected, setSelected] = useState<Order | null>(null);
     const tryPlaceOrder = async () => {
         if(price===0){
             await present({
@@ -114,7 +118,7 @@ const OrderItems:React.FC = () =>{
                 {history.map(item=>
                     <IonItem key={item.id}>
                         <IonLabel>{item.orderTime.replace("T", " ").slice(0, 16)}</IonLabel>
-                        <IonLabel slot="end">{item.products.length} produse</IonLabel>
+                        <IonButton onClick={() => { setSelected(item); setOpen(true); }}>Detalii</IonButton>
                     </IonItem>)
                 }
             </IonList>
@@ -125,6 +129,21 @@ const OrderItems:React.FC = () =>{
                                }}>
                 <IonInfiniteScrollContent loadingText="Se încarcă comenzile mai vechi..."/>
             </IonInfiniteScroll>
+            <IonModal isOpen={open} onDidDismiss={() => setOpen(false)}>
+                <IonContent>
+                    <IonInfiniteScroll>
+                        <IonInfiniteScrollContent>
+                        {selected?.products.map(p =>
+                            <IonItem key={p.id}>
+                                <img alt={""} src={""} style={{width:"100%",height:"100%",borderRadius:"10px"}}/>
+                                <IonLabel>{p.name}</IonLabel>
+                                <IonLabel slot="end">{p.price} lei</IonLabel>
+                            </IonItem>)}
+                        <IonItem>Total price: {selected?.totalPrice} lei</IonItem>
+                        </IonInfiniteScrollContent>
+                    </IonInfiniteScroll>
+                </IonContent>
+            </IonModal>
         </IonContent>
     </IonPage>
     };
