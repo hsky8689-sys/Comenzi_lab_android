@@ -1,0 +1,31 @@
+.restaurantImage {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+}
+.cardActions {
+    float: right;
+}
+.productForm {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--ion-color-light-shade, #ddd);
+}
+.productForm ion-button {
+    align-self: flex-start;
+}
+.photoPicker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0;
+}
+.photoPicker img {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 8px;
+}

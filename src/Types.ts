@@ -13,7 +13,6 @@ export interface Product extends Entity<number>{
     name:string;
     restaurant:number;
     image?:string;
-    // doar la produsele dintr-o comanda (istoric / detalii)
     quantity?:number;
 }
 export interface Order extends Entity<number>{

@@ -4,8 +4,9 @@ import log from "./logger";
 import {network} from "./Network";
 import {useSyncExternalStore} from "react";
 import {OrderedItem} from "./components/OrderItems";
-import {orderQueue, PendingOrder, PendingRestaurantAddOperation, SendResult} from "./orderQueue";
-import {restaurantCrudQueue} from "./restaurantQueue";
+import {orderQueue, PendingOrder, SendResult} from "./orderQueue";
+import {photoToBlob} from "./components/PhotoPicker";
+import {alert} from "ionicons/icons";
 
 const api = axios.create({
    baseURL:"",
@@ -178,42 +179,56 @@ export const restaurantService = {
     },
     async getUserRestaurants(page:number,size:number):Promise<PageResult<Restaurant>>{
         const params = new URLSearchParams({page: String(page), size: String(size)});
-        return cachedPage(`restaurants`,page,async () => {
+        return cachedPage(`restaurants:user:${params}`,page,async () => {
             const res = await api.get(`/restaurants/user-collection?${params}`);
             return {items: res.data.restaurants, page: res.data.page, last: res.data.last};
         });
     },
-    async addNewRestaurant(restaurant:Omit<Restaurant,"id">):Promise<boolean>{
-        const body = {res:restaurant}
-        if (network.isOnline()) {
-            try {
-                const result = await api.post('/restaurants', body);
-                return result.status === 200;
-            }catch (e){
-                return false;
-            }
-        }
-        else{
-            restaurantCrudQueue.enqueue(body as unknown as PendingRestaurantAddOperation)
-            return false;
-        }
-    }
+    addRestaurant(restaurant: Pick<Restaurant, "name" | "adress">): Promise<Restaurant | null> {
+        return mutation(() => api.post('/restaurants', restaurant));
+    },
+    updateRestaurant(id: number, restaurant: Pick<Restaurant, "name" | "adress">): Promise<Restaurant | null> {
+        return mutation(() => api.put(`/restaurants/${id}`, restaurant));
+    },
+    async deleteRestaurant(id: number): Promise<boolean> {
+        return (await mutation(() => api.delete(`/restaurants/${id}`))) !== null;
+    },
+    uploadImage(id: number, photo: Blob): Promise<Restaurant | null> {
+        return uploadImage(`/restaurants/${id}/image`, photo);
+    },
 }
 export const productsService = {
-    async addProduct(product:Omit<Product,"id">):Promise<boolean>{
-        if (network.isOnline()) {
-            try {
-                const result = await api.post('/products',product);
-                return result.status === 200;
-            }catch (e){
-                return false;
-            }
-        }
-        else{
-            //restaurantCrudQueue.enqueue(body as unknown as PendingRestaurantAddOperation)
-            return false;
-        }
+    addProduct(product: Pick<Product, "name" | "price" | "restaurant">): Promise<Product | null> {
+        return mutation(() => api.post('/products', product));
+    },
+    async updateProduct(id: number, product: Pick<Product, "name" | "price">): Promise<Product | null> {
+        return mutation(() => api.put(`/products/${id}`, product));
+    },
+    async deleteProduct(id: number): Promise<boolean> {
+        return (await mutation(() => api.delete(`/products/${id}`))) !== null;
+    },
+    uploadImage(id: number, photo: Blob): Promise<Product | null> {
+        return uploadImage(`/products/${id}/image`, photo);
+    },
+}
+// raspunsurile de CRUD au forma {message, data}; offline sau eroare -> null
+async function mutation<T>(request: () => Promise<{ data: { data?: T } }>): Promise<T | null> {
+    if (!network.isOnline()) return null;
+    try {
+        const res = await request();
+        return (res.data.data ?? {}) as T;
+    } catch (err) {
+        log.error("cererea a crapat:", err);
+        return null;
     }
+}
+// multipart/form-data cu campul "file", cum il asteapta @RequestParam("file") pe backend.
+// header-ul implicit al lui api e application/json; il schimbam ca axios sa nu transforme FormData in JSON
+// (boundary-ul il pune browserul singur)
+function uploadImage<T>(url: string, photo: Blob): Promise<T | null> {
+    const form = new FormData();
+    form.append("file", photo, `photo.${photo.type.split("/")[1] || "jpg"}`);
+    return mutation(() => api.post(url, form, {headers: {"Content-Type": "multipart/form-data"}}));
 }
 const emit = () => {
     listeners.forEach(l => l())
