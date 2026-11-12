@@ -28,6 +28,7 @@ import {PageResult, Product, Restaurant} from "../Types";
 import PhotoPicker, {PickedPhoto, photoToBlob} from "../components/PhotoPicker";
 import StoredImage from "../components/StoredImage";
 import {photoStorage} from "../photoStorage";
+import {alertEnter, alertLeave, shake} from "../animations";
 import '../theme/UserRestaurants.css';
 
 const PAGE_SIZE = 5;
@@ -143,6 +144,9 @@ const UserRestaurants: React.FC = () => {
     };
     const askDelete = (what: string, remove: () => Promise<boolean>) => confirm({
         header: `Ștergi ${what}?`,
+        // inlocuim animatia implicita de deschidere / inchidere a alertei cu a noastra
+        enterAnimation: alertEnter,
+        leaveAnimation: alertLeave,
         buttons: [
             {text: "Nu", role: "cancel"},
             {
@@ -169,12 +173,14 @@ const UserRestaurants: React.FC = () => {
                                 <IonIcon slot="icon-only" icon={createOutline}/>
                             </IonButton>
                             <IonButton color="danger"
-                                       onClick={() => askDelete(`restaurantul ${r.name}`,
-                                           async () => {
+                                       onClick={async (e) => {
+                                           await shake(e.currentTarget); // intai tremura, apoi intreaba
+                                           void askDelete(`restaurantul ${r.name}`, async () => {
                                                const ok = await restaurantService.deleteRestaurant(r.id);
                                                if (ok) await photoStorage.remove(`restaurant-${r.id}`);
                                                return ok;
-                                           })}>
+                                           });
+                                       }}>
                                 <IonIcon slot="icon-only" icon={trashOutline}/>
                             </IonButton>
                         </IonButtons>
@@ -194,8 +200,9 @@ const UserRestaurants: React.FC = () => {
                                 <IonLabel>{p.name}</IonLabel>
                                 <IonNote slot="end">{p.price} lei</IonNote>
                                 <IonButton slot="end" fill="clear" color="danger"
-                                           onClick={e => {
+                                           onClick={async e => {
                                                e.stopPropagation(); // altfel tap-ul selecteaza si produsul
+                                               await shake(e.currentTarget);
                                                void askDelete(`produsul ${p.name}`, async () => {
                                                    const ok = await productsService.deleteProduct(p.id);
                                                    if (ok) await photoStorage.remove(`product-${p.id}`);

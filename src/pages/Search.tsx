@@ -26,6 +26,7 @@ import {useCallback, useState} from "react";
 import {localOrdersService, restaurantService} from "../Service";
 import {PageResult, Product, Restaurant, RestaurantSearchField} from "../Types";
 import {usePagedList} from "../usePagedList";
+import {pop, skewIn} from "../animations";
 import {OrderedItem} from "../components/OrderItems";
 
 const PAGE_SIZE = 5;
@@ -85,6 +86,7 @@ const Search: React.FC = () => {
                         <IonSelectOption value="id">Id</IonSelectOption>
                     </IonSelect>
                     <IonSearchbar animated={true}
+                                  onIonFocus={(event) => void skewIn(event.target)}
                                   placeholder={searchBy === "id" ? "Id-ul restaurantului" : "Numele restaurantului"}
                                   inputmode={searchBy === "id" ? "numeric" : "text"}
                                   debounce={400}
@@ -128,7 +130,10 @@ const Search: React.FC = () => {
                                     <IonLabel>{p.name}</IonLabel>
                                     <IonNote slot="end">{p.price} lei</IonNote>
                                     <IonButton slot="end" fill="outline" color="warning"
-                                               onClick={() => addToOrder(p)}>+</IonButton>
+                                               onClick={(e) => {
+                                                   void pop(e.currentTarget);
+                                                   addToOrder(p);
+                                               }}>+</IonButton>
                                 </IonItem>
                             ))}
                         </IonList>

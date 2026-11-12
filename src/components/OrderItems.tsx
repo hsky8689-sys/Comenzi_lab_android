@@ -21,6 +21,7 @@ import {useNetworkStatus} from "../Network";
 import {newIdempotencyKey} from "../idempotency";
 import {usePendingOrders} from "../orderQueue";
 import {usePagedList} from "../usePagedList";
+import {pop} from "../animations";
 import "./OrderItems.css";
 
 const HISTORY_PAGE_SIZE = 10;
@@ -112,7 +113,7 @@ const OrderItems:React.FC = () =>{
                         <IonLabel>{i.price} lei</IonLabel>
                         <IonLabel>{i.quantity}</IonLabel>
                         <IonCard>
-                            <IonButton onClick={()=>localOrdersService.addItem(i)}>+</IonButton>
+                            <IonButton onClick={(e)=>{ void pop(e.currentTarget); localOrdersService.addItem(i); }}>+</IonButton>
                             <IonButton onClick={()=>localOrdersService.dropItem(i.id)}>-</IonButton>
                         </IonCard>
                     </IonItem>)
