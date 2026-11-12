@@ -8,10 +8,11 @@ import {
     IonInfiniteScrollContent,
     IonItem,
     IonLabel,
-    IonList, IonModal,
+    IonList,
     IonNote,
     IonPage,
-    IonSelectOption, IonToast,
+    IonPopover,
+    IonSelectOption, IonThumbnail, IonToast,
     useIonToast
 } from "@ionic/react";
 import {Order, Product, Restaurant} from "../Types";
@@ -20,6 +21,7 @@ import {useNetworkStatus} from "../Network";
 import {newIdempotencyKey} from "../idempotency";
 import {usePendingOrders} from "../orderQueue";
 import {usePagedList} from "../usePagedList";
+import "./OrderItems.css";
 
 const HISTORY_PAGE_SIZE = 10;
 
@@ -45,6 +47,16 @@ const OrderItems:React.FC = () =>{
     const [enable,setEnabled]=useState(true);
     const [open, setOpen] = useState(false);
     const [selected, setSelected] = useState<Order | null>(null);
+    // click-ul pe comanda, ca popover-ul sa apara langa ea
+    const [popoverEvent, setPopoverEvent] = useState<Event | undefined>(undefined);
+    const showDetails = async (e: React.MouseEvent, item: Order) => {
+        setPopoverEvent(e.nativeEvent);
+        setSelected(item); // aratam imediat ce avem din istoric, totalul vine de pe backend
+        setOpen(true);
+        const details = await orderService.getOrderStats(item.id);
+        // daca intre timp a dat tap pe alta comanda, nu suprascriem
+        if (details) setSelected(prev => prev?.id === details.id ? details : prev);
+    }
     const tryPlaceOrder = async () => {
         if(price===0){
             await present({
@@ -116,9 +128,12 @@ const OrderItems:React.FC = () =>{
             <IonList>
                 {history.length === 0 && <IonItem><IonLabel>Nicio comandă încă</IonLabel></IonItem>}
                 {history.map(item=>
-                    <IonItem key={item.id}>
+                    <IonItem key={item.id} button detail onClick={(e) => showDetails(e, item)}>
                         <IonLabel>{item.orderTime.replace("T", " ").slice(0, 16)}</IonLabel>
-                        <IonButton onClick={() => { setSelected(item); setOpen(true); }}>Detalii</IonButton>
+                        <div slot="end" className={"historyThumbs"}>
+                            {item.products.slice(0, 4).map(p => p.image &&
+                                <img key={p.id} alt={p.name} src={p.image}/>)}
+                        </div>
                     </IonItem>)
                 }
             </IonList>
@@ -129,21 +144,34 @@ const OrderItems:React.FC = () =>{
                                }}>
                 <IonInfiniteScrollContent loadingText="Se încarcă comenzile mai vechi..."/>
             </IonInfiniteScroll>
-            <IonModal isOpen={open} onDidDismiss={() => setOpen(false)}>
+            {/* popover si nu modal: nu acopera pagina si se inchide singur la tap in afara lui;
+                fara onDidDismiss, `open` ar ramane true si nu s-ar mai redeschide */}
+            <IonPopover isOpen={open} event={popoverEvent} showBackdrop={false}
+                        className={"orderDetails"}
+                        onDidDismiss={() => setOpen(false)}>
                 <IonContent>
-                    <IonInfiniteScroll>
-                        <IonInfiniteScrollContent>
+                    <IonList lines="none">
                         {selected?.products.map(p =>
                             <IonItem key={p.id}>
-                                <img alt={""} src={""} style={{width:"100%",height:"100%",borderRadius:"10px"}}/>
-                                <IonLabel>{p.name}</IonLabel>
-                                <IonLabel slot="end">{p.price} lei</IonLabel>
+                                {p.image &&
+                                    <IonThumbnail slot="start">
+                                        <img alt={p.name} src={p.image} style={{borderRadius:"8px"}}/>
+                                    </IonThumbnail>}
+                                <IonLabel>
+                                    {p.name}
+                                    <p>{p.quantity ?? 1} × {p.price} lei</p>
+                                </IonLabel>
+                                <IonNote slot="end">{(p.quantity ?? 1) * p.price} lei</IonNote>
                             </IonItem>)}
-                        <IonItem>Total price: {selected?.totalPrice} lei</IonItem>
-                        </IonInfiniteScrollContent>
-                    </IonInfiniteScroll>
+                        <IonItem>
+                            <IonLabel><strong>Total</strong></IonLabel>
+                            <IonNote slot="end">
+                                <strong>{selected?.totalPrice !== undefined ? `${selected.totalPrice} lei` : "..."}</strong>
+                            </IonNote>
+                        </IonItem>
+                    </IonList>
                 </IonContent>
-            </IonModal>
+            </IonPopover>
         </IonContent>
     </IonPage>
     };

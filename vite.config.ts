@@ -13,6 +13,7 @@ export default defineConfig({
             '/users': 'http://localhost:8080',
             '/orders': 'http://localhost:8080',
             '/restaurants': 'http://localhost:8080',
+            '/images': 'http://localhost:8080',
             '/mywebsockets': { target: 'http://localhost:8080', ws: true },
         },
     },

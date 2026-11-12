@@ -16,6 +16,7 @@ import {
     IonSearchbar,
     IonSelect,
     IonSelectOption,
+    IonThumbnail,
     IonTitle,
     IonToolbar
 } from "@ionic/react";
@@ -29,34 +30,18 @@ import {OrderedItem} from "../components/OrderItems";
 
 const PAGE_SIZE = 5;
 const proto = location.protocol === "https:" ? "wss" : "ws";
-interface RestaurantData  {
-    items: Restaurant[];
-    last: boolean;
-    loadMore : (()=>Promise<void>);
-    reload:(()=>Promise<void>);
-}
 const Search: React.FC = () => {
     const [searchBy, setSearchBy] = useState<RestaurantSearchField>("name");
     const [query, setQuery] = useState("");
-    const [searching,setSearching] = useState(false);
+    const [submitted, setSubmitted] = useState<{by: RestaurantSearchField, value: string} | null>(null);
     const fetchPage = useCallback((page: number): Promise<PageResult<Restaurant>> => {
-        if(!searching)return Promise.resolve({items: [], page, last: true});
-        const value = query.trim();
-        // daca facem cautare dupa id ne trebuie UN NUMAR SI ATAT,in rest nu va gasi nimic pe backend
-        if (searchBy === "id" && !/^\d+$/.test(value)) {
+        if(!submitted)return Promise.resolve({items: [], page, last: true});
+        if (submitted.by === "id" && !/^\d+$/.test(submitted.value)) {
             return Promise.resolve({items: [], page, last: true});
         }
-        return restaurantService.search(searchBy, value, page, PAGE_SIZE);
-    }, [searching]);
-    //const [data] = useCallback(()=>{
-    // if(searching)
-
-
-    // },[searching])
-    const executeSearch = usePagedList(fetchPage, `${searchBy}:${query}`);
-    const fetchedData = useCallback(()=>{
-        return executeSearch();
-    },[searching])
+        return restaurantService.search(submitted.by, submitted.value, page, PAGE_SIZE);
+    }, [submitted]);
+    const fetchedData = usePagedList(fetchPage, submitted ? `${submitted.by}:${submitted.value}` : "");
     //const {items: restaurants, last, loadMore} = usePagedList(fetchPage, `${searchBy}:${query}`);
     /*
     useEffect(() => {
@@ -114,10 +99,7 @@ const Search: React.FC = () => {
                     </IonSearchbar>
                     <IonButton slot={"end"}
                                style={{height:"100%"}}
-                               onClick={async (e)=>{
-                                    setSearching(true)
-                               }
-                    }>
+                               onClick={() => setSubmitted({by: searchBy, value: query.trim()})}>
                         Search
                     </IonButton>
                 </IonToolbar>
@@ -131,6 +113,7 @@ const Search: React.FC = () => {
                     </IonCard>}
                 {fetchedData.items.map(r => (
                     <IonCard key={r.id}>
+                        {r.image && <img alt={r.name} src={r.image} className={"restaurantImage"}/>}
                         <IonCardHeader>
                             <IonCardTitle>{r.name}</IonCardTitle>
                             <IonCardSubtitle>{r.adress}</IonCardSubtitle>
@@ -138,7 +121,10 @@ const Search: React.FC = () => {
                         <IonList>
                             {r.products.map(p => (
                                 <IonItem key={p.id}>
-                                    <img alt={""} src={""} style={{width:"100%",height:"100%",borderRadius:"10px"}}/>
+                                    {p.image &&
+                                        <IonThumbnail slot="start">
+                                            <img alt={p.name} src={p.image} style={{borderRadius:"10px"}}/>
+                                        </IonThumbnail>}
                                     <IonLabel>{p.name}</IonLabel>
                                     <IonNote slot="end">{p.price} lei</IonNote>
                                     <IonButton slot="end" fill="outline" color="warning"
