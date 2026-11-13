@@ -1,5 +1,5 @@
 import axios from "axios";
-import {ApiResponse, Order, PageResult, Product, Restaurant, RestaurantSearchField, User} from "./Types";
+import {ApiResponse, GeoLocation, Order, PageResult, Product, Restaurant, RestaurantSearchField, User} from "./Types";
 import log from "./logger";
 import {network} from "./Network";
 import {useSyncExternalStore} from "react";
@@ -177,6 +177,16 @@ export const restaurantService = {
             return {items: res.data.restaurants, page: res.data.page, last: res.data.last};
         });
     },
+    async nearby(point: GeoLocation, radiusKm: number, page: number, size: number): Promise<PageResult<Restaurant>> {
+        const params = new URLSearchParams({
+            latitude: String(point.latitude), longitude: String(point.longitude),
+            radiusKm: String(radiusKm), page: String(page), size: String(size),
+        });
+        return cachedPage(`restaurants:nearby:${params}`, page, async () => {
+            const res = await api.get(`/restaurants/nearby?${params}`);
+            return {items: res.data.restaurants, page: res.data.page, last: res.data.last};
+        });
+    },
     async getUserRestaurants(page:number,size:number):Promise<PageResult<Restaurant>>{
         const params = new URLSearchParams({page: String(page), size: String(size)});
         return cachedPage(`restaurants:user:${params}`,page,async () => {
@@ -184,10 +194,10 @@ export const restaurantService = {
             return {items: res.data.restaurants, page: res.data.page, last: res.data.last};
         });
     },
-    addRestaurant(restaurant: Pick<Restaurant, "name" | "adress">): Promise<Restaurant | null> {
+    addRestaurant(restaurant: Pick<Restaurant, "name" | "adress" | "location">): Promise<Restaurant | null> {
         return mutation(() => api.post('/restaurants', restaurant));
     },
-    updateRestaurant(id: number, restaurant: Pick<Restaurant, "name" | "adress">): Promise<Restaurant | null> {
+    updateRestaurant(id: number, restaurant: Pick<Restaurant, "name" | "adress" | "location">): Promise<Restaurant | null> {
         return mutation(() => api.put(`/restaurants/${id}`, restaurant));
     },
     async deleteRestaurant(id: number): Promise<boolean> {

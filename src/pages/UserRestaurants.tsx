@@ -22,11 +22,12 @@ import {
     useIonAlert,
     useIonToast
 } from "@ionic/react";
-import {createOutline, trashOutline} from "ionicons/icons";
+import {createOutline, locationOutline, trashOutline} from "ionicons/icons";
 import {usePagedList} from "../usePagedList";
-import {PageResult, Product, Restaurant} from "../Types";
+import {GeoLocation, PageResult, Product, Restaurant} from "../Types";
 import PhotoPicker, {PickedPhoto, photoToBlob} from "../components/PhotoPicker";
 import StoredImage from "../components/StoredImage";
+import MapModal from "../components/MapModal";
 import {photoStorage} from "../photoStorage";
 import {alertEnter, alertLeave, shake} from "../animations";
 import '../theme/UserRestaurants.css';
@@ -47,13 +48,15 @@ const RestaurantForm: React.FC<{ editing: Restaurant | null, onDone: () => void,
     ({editing, onDone, toast}) => {
     const [name, setName] = useState(editing?.name ?? "");
     const [adress, setAdress] = useState(editing?.adress ?? "");
+    const [location, setLocation] = useState<GeoLocation | null>(editing?.location ?? null);
+    const [mapOpen, setMapOpen] = useState(false);
     const [photo, setPhoto] = useState<PickedPhoto | null>(null);
     const [busy, setBusy] = useState(false);
     const save = async () => {
         if (!name.trim() || !adress.trim()) return toast("Completează numele și adresa", false);
         setBusy(true);
         try {
-            const body = {name: name.trim(), adress: adress.trim()};
+            const body = {name: name.trim(), adress: adress.trim(), location};
             const saved = editing
                 ? await restaurantService.updateRestaurant(editing.id, body)
                 : await restaurantService.addRestaurant(body);
@@ -79,6 +82,12 @@ const RestaurantForm: React.FC<{ editing: Restaurant | null, onDone: () => void,
             <IonInput label="Adresă" labelPlacement="stacked" value={adress}
                       onIonInput={e => setAdress(e.detail.value ?? "")}/>
             <PhotoPicker current={editing?.image} picked={photo} onPicked={setPhoto}/>
+            <IonButton fill="outline" onClick={() => setMapOpen(true)}>
+                <IonIcon slot="start" icon={locationOutline}/>
+                {location ? `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}` : "Alege locația pe hartă"}
+            </IonButton>
+            <MapModal isOpen={mapOpen} title={"Atinge harta unde e restaurantul"} location={location}
+                      onClose={() => setMapOpen(false)} onConfirm={setLocation}/>
             <IonButton disabled={busy} onClick={save}>{editing ? "Modifică" : "Adaugă"}</IonButton>
             {editing && <IonButton fill="clear" color="medium" onClick={onDone}>Anulează</IonButton>}
         </IonCardContent>

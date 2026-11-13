@@ -34,4 +34,11 @@ export interface Restaurant extends Entity<number>{
     products:Product[];
     ownerId:number;
     image?:string;
+    location?:GeoLocation | null;
+    distanceKm?:number; // doar in rezultatele cautarii dupa locatie
+}
+// "Location" e deja un tip global in browser (window.location), de aici numele
+export interface GeoLocation {
+    latitude:number;
+    longitude:number;
 }

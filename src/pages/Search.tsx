@@ -6,6 +6,8 @@ import {
     IonCardTitle,
     IonContent,
     IonHeader,
+    IonInput,
+    IonIcon,
     IonInfiniteScroll,
     IonInfiniteScrollContent,
     IonItem,
@@ -20,29 +22,46 @@ import {
     IonTitle,
     IonToolbar
 } from "@ionic/react";
-import {searchCircle, trashSharp} from "ionicons/icons";
+import {locationOutline, searchCircle, trashSharp} from "ionicons/icons";
 import '../theme/Search.css';
 import {useCallback, useState} from "react";
 import {localOrdersService, restaurantService} from "../Service";
-import {PageResult, Product, Restaurant, RestaurantSearchField} from "../Types";
+import {GeoLocation, PageResult, Product, Restaurant, RestaurantSearchField} from "../Types";
 import {usePagedList} from "../usePagedList";
 import {pop, skewIn} from "../animations";
 import {OrderedItem} from "../components/OrderItems";
+import MapModal from "../components/MapModal";
 
 const PAGE_SIZE = 5;
+// "location" nu e camp de cautare pe backend (/search), are endpoint-ul lui (/nearby)
+type SearchMode = RestaurantSearchField | "location";
 const proto = location.protocol === "https:" ? "wss" : "ws";
 const Search: React.FC = () => {
-    const [searchBy, setSearchBy] = useState<RestaurantSearchField>("name");
+    const [searchBy, setSearchBy] = useState<SearchMode>("name");
+    // textul cautat; in modul "location" e raza in km
     const [query, setQuery] = useState("");
-    const [submitted, setSubmitted] = useState<{by: RestaurantSearchField, value: string} | null>(null);
+    // punctul ales pe harta pentru cautarea dupa locatie
+    const [point, setPoint] = useState<GeoLocation | null>(null);
+    const [pickingPoint, setPickingPoint] = useState(false);
+    // restaurantul aratat acum pe harta; null = harta inchisa
+    const [onMap, setOnMap] = useState<Restaurant | null>(null);
+    const [submitted, setSubmitted] = useState<{by: SearchMode, value: string, point: GeoLocation | null} | null>(null);
     const fetchPage = useCallback((page: number): Promise<PageResult<Restaurant>> => {
-        if(!submitted)return Promise.resolve({items: [], page, last: true});
+        const nothing = Promise.resolve({items: [], page, last: true});
+        if(!submitted)return nothing;
+        if (submitted.by === "location") {
+            const radius = Number(submitted.value);
+            if (!submitted.point || !(radius > 0)) return nothing;
+            return restaurantService.nearby(submitted.point, radius, page, PAGE_SIZE);
+        }
         if (submitted.by === "id" && !/^\d+$/.test(submitted.value)) {
-            return Promise.resolve({items: [], page, last: true});
+            return nothing;
         }
         return restaurantService.search(submitted.by, submitted.value, page, PAGE_SIZE);
     }, [submitted]);
-    const fetchedData = usePagedList(fetchPage, submitted ? `${submitted.by}:${submitted.value}` : "");
+    // cheia include si punctul: aceeasi raza in alt loc e alta cautare
+    const fetchedData = usePagedList(fetchPage, submitted
+        ? `${submitted.by}:${submitted.value}:${submitted.point?.latitude},${submitted.point?.longitude}` : "");
     //const {items: restaurants, last, loadMore} = usePagedList(fetchPage, `${searchBy}:${query}`);
     /*
     useEffect(() => {
@@ -84,7 +103,17 @@ const Search: React.FC = () => {
                                onIonChange={(event) => setSearchBy(event.detail.value)}>
                         <IonSelectOption value="name">Nume</IonSelectOption>
                         <IonSelectOption value="id">Id</IonSelectOption>
+                        <IonSelectOption value="location">Locație</IonSelectOption>
                     </IonSelect>
+                    {searchBy === "location" ? <>
+                        <IonInput className={"radiusInput"} type="number" inputmode="decimal" min="0"
+                                  placeholder="Raza (km)" value={query}
+                                  onIonInput={(event) => setQuery(event.detail.value ?? "")}/>
+                        <IonButton fill="outline" onClick={() => setPickingPoint(true)}>
+                            <IonIcon slot="start" icon={locationOutline}/>
+                            {point ? `${point.latitude.toFixed(4)}, ${point.longitude.toFixed(4)}` : "Alege punctul"}
+                        </IonButton>
+                    </> :
                     <IonSearchbar animated={true}
                                   onIonFocus={(event) => void skewIn(event.target)}
                                   placeholder={searchBy === "id" ? "Id-ul restaurantului" : "Numele restaurantului"}
@@ -98,10 +127,10 @@ const Search: React.FC = () => {
                                   value={query}
                                   onIonInput={(event) => setQuery(event.detail.value ?? "")}
                     >
-                    </IonSearchbar>
+                    </IonSearchbar>}
                     <IonButton slot={"end"}
                                style={{height:"100%"}}
-                               onClick={() => setSubmitted({by: searchBy, value: query.trim()})}>
+                               onClick={() => setSubmitted({by: searchBy, value: query.trim(), point})}>
                         Search
                     </IonButton>
                 </IonToolbar>
@@ -117,8 +146,15 @@ const Search: React.FC = () => {
                     <IonCard key={r.id}>
                         {r.image && <img alt={r.name} src={r.image} className={"restaurantImage"}/>}
                         <IonCardHeader>
+                            {r.location &&
+                                <IonButton className={"mapButton"} fill="clear" onClick={() => setOnMap(r)}>
+                                    <IonIcon slot="start" icon={locationOutline}/>
+                                    Hartă
+                                </IonButton>}
                             <IonCardTitle>{r.name}</IonCardTitle>
-                            <IonCardSubtitle>{r.adress}</IonCardSubtitle>
+                            <IonCardSubtitle>
+                                {r.adress}{r.distanceKm !== undefined && ` · ${r.distanceKm} km`}
+                            </IonCardSubtitle>
                         </IonCardHeader>
                         <IonList>
                             {r.products.map(p => (
@@ -146,6 +182,10 @@ const Search: React.FC = () => {
                                    }}>
                     <IonInfiniteScrollContent loadingText="Se încarcă mai multe restaurante..."/>
                 </IonInfiniteScroll>
+                <MapModal isOpen={pickingPoint} title={"Atinge harta unde cauți"} location={point}
+                          onClose={() => setPickingPoint(false)} onConfirm={setPoint}/>
+                <MapModal isOpen={onMap !== null} title={onMap?.name ?? ""}
+                          location={onMap?.location} onClose={() => setOnMap(null)}/>
             </IonContent>
         </IonPage>
     );

@@ -67,3 +67,11 @@
     height: 160px;
     object-fit: cover;
 }
+
+.mapButton {
+    float: right;
+}
+
+.radiusInput {
+    max-width: 110px;
+}
